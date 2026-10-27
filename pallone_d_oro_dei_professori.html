@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pallone d'Oro dei Professori - Edizione Segreta (17 Votanti)</title>
+    <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2canvas for card export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Montserrat:wght@300;400;600;800&display=swap');
+    
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #08080a;
+      color: #f3f4f6;
+    }
+    
+    .font-serif-gold {
+      font-family: 'Cinzel', serif;
+    }
+
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #FFF3A1 0%, #D4AF37 50%, #AA7C11 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .gold-border {
+      border-color: #D4AF37;
+    }
+
+    .gold-bg {
+      background: linear-gradient(135deg, #D4AF37 0%, #AA7C11 100%);
+    }
+
+    .gold-card-bg {
+      background: linear-gradient(145deg, rgba(30, 27, 20, 0.9), rgba(12, 12, 16, 0.95));
+      border: 1px solid rgba(212, 175, 55, 0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-yellow-500 selection:text-black">
+
+  <div id="app" class="relative z-10 max-w-6xl mx-auto px-4 py-8 w-full">
+    <!-- Header -->
+    <header class="text-center mb-8 relative">
+      <div class="inline-block p-2 rounded-full border border-yellow-500/30 mb-2 bg-yellow-500/10">
+        <i class="fa-solid fa-trophy text-3xl text-yellow-400 animate-pulse"></i>
+      </div>
+      <h1 class="text-3xl md:text-5xl font-extrabold font-serif-gold gold-gradient-text tracking-wide mb-2">
+        PALLONE D'ORO DEI PROFESSORI
+      </h1>
+      <p class="text-xs md:text-sm text-yellow-200/70 tracking-widest uppercase">Gran Galà di Premiazione &bull; Edizione Finale</p>
+      
+      <!-- Nav Controls -->
+      <div class="flex flex-wrap justify-center gap-3 mt-6">
+        <button id="navVoteBtn" onclick="switchTab('vote')" class="px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 border border-yellow-500/40 bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/40 shadow-lg shadow-yellow-500/10">
+          <i class="fa-solid fa-vote-yea mr-2"></i> Scheda Voto
+        </button>
+        <button id="navGalaBtn" onclick="switchTab('gala')" class="px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 border border-yellow-500/20 bg-black/40 text-gray-300 hover:text-yellow-300 hover:bg-yellow-500/20">
+          <i class="fa-solid fa-award mr-2"></i> Galà Finale & Risultati
+        </button>
+        <button id="navAdminBtn" onclick="openAdminModal()" class="px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 border border-gray-700 bg-gray-900/60 text-gray-400 hover:text-yellow-400 hover:border-yellow-500/50">
+          <i class="fa-solid fa-user-shield mr-1"></i> Area Organizzatore
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB VOTO -->
+    <main id="tabVote" class="space-y-6">
+      <div class="gold-card-bg p-6 rounded-2xl shadow-2xl backdrop-blur-md">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-yellow-500/20 pb-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold font-serif-gold text-yellow-300"><i class="fa-solid fa-check-double mr-2"></i>Compila la tua Scheda Ufficiale</h2>
+            <p class="text-xs text-gray-400 mt-1">Seleziona il tuo nome, inserisci il tuo PIN segreto ed esprimi la classifica completa dei 9 docenti.</p>
+          </div>
+          <div class="text-right">
+            <span id="voterStatusBadge" class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
+              In attesa di autenticazione
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-yellow-400/80 mb-2">Votante (Giurato)</label>
+            <select id="voterSelect" class="w-full bg-black/70 border border-yellow-500/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400">
+              <option value="">-- Seleziona il tuo Nome --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-yellow-400/80 mb-2">PIN Segreto</label>
+            <input type="password" id="voterPinInput" placeholder="Inserisci PIN a 4 cifre" maxlength="8" class="w-full bg-black/70 border border-yellow-500/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400">
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-sm font-bold uppercase text-yellow-400/90 tracking-wider mb-3"><i class="fa-solid fa-sort-amount-down mr-2"></i>Assegna i Punteggi (Da 15pt a 2pt)</h3>
+          <p class="text-xs text-gray-400 mb-4">Punti assegnati: 1° (15pt), 2° (12pt), 3° (10pt), 4° (8pt), 5° (7pt), 6° (5pt), 7° (4pt), 8° (3pt), 9° (2pt).</p>
+          
+          <div id="ballotSlots" class="space-y-3">
+            <!-- Dynamic Slots -->
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-yellow-500/20">
+          <button onclick="submitBallot()" class="gold-bg text-black font-bold px-8 py-3 rounded-xl hover:brightness-110 transition shadow-lg shadow-yellow-500/20 flex items-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Invia Voto Ufficiale
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB GALA (RISULTATI) -->
+    <main id="tabGala" class="space-y-8 hidden">
+      <!-- LOCKED VIEW (WHEN ADMIN HAS NOT UNLOCKED GALA YET) -->
+      <div id="galaLockedView" class="gold-card-bg p-12 rounded-3xl text-center space-y-6 shadow-2xl">
+        <div class="w-24 h-24 mx-auto rounded-full bg-yellow-500/10 border-2 border-yellow-500/40 flex items-center justify-center text-yellow-400 text-4xl shadow-inner">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <div class="max-w-xl mx-auto space-y-3">
+          <h2 class="text-3xl font-extrabold font-serif-gold gold-gradient-text">Risultati Bloccati dall'Organizzatore</h2>
+          <p class="text-gray-300 text-sm leading-relaxed">
+            Le votazioni sono in corso o in fase di spoglio segreto. I risultati ufficiali e il podio saranno visibili a tutti solo dopo lo sblocco manuale dell'Organizzatore durante il Galà Finale!
+          </p>
+        </div>
+        
+        <!-- Live Voting Counter Badge -->
+        <div class="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-black/60 border border-yellow-500/30 text-yellow-300">
+          <i class="fa-solid fa-envelope-open-text text-lg"></i>
+          <span class="text-sm font-semibold">Schede Consegnate: <strong id="lockedVoteCounter" class="text-white font-mono text-base">0/17</strong></span>
+        </div>
+
+        <div class="pt-4">
+          <button onclick="openAdminModal()" class="px-6 py-2.5 rounded-xl border border-yellow-500/50 text-xs font-bold text-yellow-400 hover:bg-yellow-500/20 transition">
+            <i class="fa-solid fa-key mr-1.5"></i> Sblocca Galà (Richiede Master PIN Admin)
+          </button>
+        </div>
+      </div>
+
+      <!-- UNLOCKED GALA VIEW (VISIBLE ONLY WHEN g_galaUnlocked IS TRUE) -->
+      <div id="galaUnlockedView" class="space-y-10 hidden">
+        <!-- Winner Banner Card -->
+        <div id="winnerCardContainer" class="relative overflow-hidden gold-card-bg p-8 md:p-10 rounded-3xl border-2 border-yellow-500/60 shadow-2xl text-center">
+          <div class="absolute -top-12 -right-12 w-48 h-48 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div class="uppercase tracking-widest text-xs font-bold text-yellow-400 mb-2">VINCITORE ASSOLUTO &bull; PALLONE D'ORO</div>
+          <div class="relative inline-block my-4">
+            <div id="winnerPhotoWrap" class="w-36 h-36 md:w-44 md:h-44 rounded-full mx-auto border-4 border-yellow-400 shadow-2xl overflow-hidden bg-black flex items-center justify-center">
+              <img id="winnerPhoto" src="" alt="Vincitore" class="w-full h-full object-cover hidden">
+              <i id="winnerPhotoFallback" class="fa-solid fa-user-graduate text-6xl text-yellow-500/50"></i>
+            </div>
+            <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 gold-bg text-black font-extrabold px-4 py-1 rounded-full text-xs shadow-lg uppercase whitespace-nowrap">
+              <i class="fa-solid fa-crown mr-1"></i> Vincitore
+            </div>
+          </div>
+
+          <h2 id="winnerName" class="text-3xl md:text-5xl font-black font-serif-gold gold-gradient-text mt-4">---</h2>
+          <p id="winnerSubject" class="text-sm md:text-base text-gray-300 font-medium">---</p>
+          <div class="mt-4 inline-flex items-center gap-2 px-6 py-2 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 font-bold text-lg">
+            <i class="fa-solid fa-star text-yellow-400"></i> <span id="winnerPoints">0</span> Punti Totali
+          </div>
+
+          <div class="mt-6 flex justify-center">
+            <button onclick="downloadWinnerCard()" class="px-5 py-2.5 rounded-xl bg-black/60 border border-yellow-500/40 text-xs font-bold text-yellow-300 hover:bg-yellow-500/30 transition flex items-center gap-2">
+              <i class="fa-solid fa-download"></i> Scarica Carta Celebrativa PNG
+            </button>
+          </div>
+        </div>
+
+        <!-- PODIUM SECTION (Top 3) -->
+        <div class="space-y-4">
+          <h3 class="text-xl font-bold font-serif-gold text-yellow-300 text-center"><i class="fa-solid fa-trophy mr-2 text-yellow-400"></i>Il Podio d'Onore</h3>
+          <div id="podiumCards" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            <!-- Top 3 rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- FULL LEADERBOARD TABLE -->
+        <div class="gold-card-bg p-6 rounded-2xl shadow-xl">
+          <h3 class="text-lg font-bold font-serif-gold text-yellow-300 mb-4 border-b border-yellow-500/20 pb-3">
+            <i class="fa-solid fa-list-ol mr-2"></i>Classifica Generale Definitiva
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-yellow-500/30 text-xs font-semibold text-yellow-400 uppercase tracking-wider">
+                  <th class="py-3 px-4">Pos</th>
+                  <th class="py-3 px-4">Professore</th>
+                  <th class="py-3 px-4">Materia</th>
+                  <th class="py-3 px-4 text-center">Schede 1° Posto</th>
+                  <th class="py-3 px-4 text-right">Punti Totali</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardTbody" class="divide-y divide-gray-800 text-sm">
+                <!-- Dynamic Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- DETAILED VOTES MATRIX -->
+        <div class="gold-card-bg p-6 rounded-2xl shadow-xl">
+          <h3 class="text-lg font-bold font-serif-gold text-yellow-300 mb-4 border-b border-yellow-500/20 pb-3">
+            <i class="fa-solid fa-table-cells mr-2"></i>Matrice Trasparente del Dettaglio Voti
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-center border-collapse">
+              <thead id="matrixThead" class="bg-black/50 text-yellow-400 font-semibold border-b border-yellow-500/30">
+                <!-- Dynamic Voters Header -->
+              </thead>
+              <tbody id="matrixTbody" class="divide-y divide-gray-800">
+                <!-- Dynamic Matrix Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ADMIN MODAL -->
+  <div id="adminModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="gold-card-bg max-w-3xl w-full max-h-[90vh] overflow-y-auto rounded-3xl border border-yellow-500/50 p-6 space-y-6 shadow-2xl relative">
+      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="border-b border-yellow-500/20 pb-4">
+        <h2 class="text-2xl font-bold font-serif-gold gold-gradient-text"><i class="fa-solid fa-user-shield mr-2"></i>Pannello Amministratore</h2>
+        <p class="text-xs text-gray-400">Master PIN di controllo predefinito: <code class="text-yellow-300">2026</code></p>
+      </div>
+
+      <!-- Admin Auth Check -->
+      <div id="adminAuthBox" class="space-y-4">
+        <div>
+          <label class="block text-xs uppercase text-yellow-400 font-semibold mb-2">Master PIN Organizzatore</label>
+          <input type="password" id="adminPinInput" placeholder="Inserisci Master PIN (2026)" class="w-full bg-black/70 border border-yellow-500/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400">
+        </div>
+        <button onclick="verifyAdminPin()" class="w-full gold-bg text-black font-bold py-3 rounded-xl hover:brightness-110">
+          Accedi all'Area Riservata
+        </button>
+      </div>
+
+      <!-- Admin Controls Panel (Hidden until Auth) -->
+      <div id="adminControlsBox" class="space-y-8 hidden">
+        <!-- Unlock Gala Control -->
+        <div class="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h4 class="font-bold text-yellow-300 text-sm"><i class="fa-solid fa-lock-open mr-1.5"></i>Sblocco Galà Finale</h4>
+            <p class="text-xs text-gray-400">Rendi visibili i risultati, il podio e la matrice voti a tutti gli utenti.</p>
+          </div>
+          <button id="toggleGalaUnlockBtn" onclick="toggleGalaUnlock()" class="px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-lg">
+            <!-- Dynamic button state -->
+          </button>
+        </div>
+
+        <!-- WhatsApp Links Quick Share -->
+        <div class="p-4 rounded-2xl bg-black/40 border border-gray-800 space-y-3">
+          <h4 class="font-bold text-yellow-300 text-sm"><i class="fa-brands fa-whatsapp text-emerald-400 mr-2"></i>Invito Votanti & Credenziali PIN</h4>
+          <p class="text-xs text-gray-400">Copia il messaggio preformattato per WhatsApp da inviare alla classe con tutti i PIN di voto.</p>
+          <button onclick="copyWhatsAppInvite()" class="px-4 py-2 rounded-xl bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/50 text-xs font-semibold flex items-center gap-2">
+            <i class="fa-solid fa-copy"></i> Copia Messaggio WhatsApp con Credenziali PIN
+          </button>
+        </div>
+
+        <!-- Professor Photos Management -->
+        <div class="space-y-4">
+          <h4 class="font-bold text-yellow-300 text-sm border-b border-yellow-500/20 pb-2">
+            <i class="fa-solid fa-image mr-2"></i>Gestione Foto Professori
+          </h4>
+          <div id="profPhotoList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamic prof photo uploaders -->
+          </div>
+        </div>
+
+        <!-- Voters PIN Reset & Status -->
+        <div class="space-y-4">
+          <h4 class="font-bold text-yellow-300 text-sm border-b border-yellow-500/20 pb-2">
+            <i class="fa-solid fa-users mr-2"></i>Stato Voti Studenti (17 Giurati)
+          </h4>
+          <div id="voterAdminList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <!-- Dynamic Voters Status -->
+          </div>
+        </div>
+
+        <!-- Data Export / Import Backup -->
+        <div class="pt-4 border-t border-yellow-500/20 flex flex-wrap gap-3">
+          <button onclick="exportDataJSON()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-xs font-semibold hover:bg-gray-700">
+            <i class="fa-solid fa-download mr-1"></i> Esporta Backup JSON
+          </button>
+          <label class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-xs font-semibold hover:bg-gray-700 cursor-pointer">
+            <i class="fa-solid fa-upload mr-1"></i> Importa Backup JSON
+            <input type="file" id="importJsonInput" accept=".json" onchange="importDataJSON(event)" class="hidden">
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- APP STATE & CONSTANTS ---
+    const ADMIN_MASTER_PIN = "2026";
+    const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'pallone-d-oro-professori';
+
+    // 9 Professors
+    const DEFAULT_PROFESSORS = [
+      { id: 'p1', name: 'De Filippis', subject: 'Disegno e Storia dell\'Arte', photo: '' },
+      { id: 'p2', name: 'Garcia', subject: 'Lingua Spagnola', photo: '' },
+      { id: 'p3', name: 'Caramia', subject: 'Matematica e Fisica', photo: '' },
+      { id: 'p4', name: 'Catalano', subject: 'Lettere ed Italiano', photo: '' },
+      { id: 'p5', name: 'Annicchiarico', subject: 'Scienze Naturali e Chimica', photo: '' },
+      { id: 'p6', name: 'Quaranta', subject: 'Filosofia e Storia', photo: '' },
+      { id: 'p7', name: 'Tebano', subject: 'Scienze Motorie', photo: '' },
+      { id: 'p8', name: 'Fornaro', subject: 'Religione', photo: '' },
+      { id: 'p9', name: 'Salamino', subject: 'Lingua Inglese', photo: '' }
+    ];
+
+    // 17 Students with default PINs 1001-1017
+    const DEFAULT_VOTERS = [
+      { id: 'v1', name: 'Frank', pin: '1001' },
+      { id: 'v2', name: 'Fefe', pin: '1002' },
+      { id: 'v3', name: 'Giorgia C.', pin: '1003' },
+      { id: 'v4', name: 'Vane', pin: '1004' },
+      { id: 'v5', name: 'Alice', pin: '1005' },
+      { id: 'v6', name: 'Giorgia L.', pin: '1006' },
+      { id: 'v7', name: 'Noemi', pin: '1007' },
+      { id: 'v8', name: 'Marco', pin: '1008' },
+      { id: 'v9', name: 'Masciu', pin: '1009' },
+      { id: 'v10', name: 'Sofia', pin: '1010' },
+      { id: 'v11', name: 'Pia', pin: '1011' },
+      { id: 'v12', name: 'Toni', pin: '1012' },
+      { id: 'v13', name: 'Pierri', pin: '1013' },
+      { id: 'v14', name: 'Rizzo', pin: '1014' },
+      { id: 'v15', name: 'Faffi', pin: '1015' },
+      { id: 'v16', name: 'Urso', pin: '1016' },
+      { id: 'v17', name: 'Vacca', pin: '1017' }
+    ];
+
+    const POINTS_SCALE = [15, 12, 10, 8, 7, 5, 4, 3, 2];
+
+    // Global in-memory data state
+    let g_professors = [...DEFAULT_PROFESSORS];
+    let g_voters = [...DEFAULT_VOTERS];
+    let g_ballots = {}; // { voterId: [profId1, profId2, ...] }
+    let g_galaUnlocked = false; // MUST default to false! Controlled ONLY by Admin
+    let g_isAdminAuthed = false;
+
+    // Firebase reference setup
+    let db = null;
+    let auth = null;
+    let syncUnsubscribe = null;
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+      initApp();
+    };
+
+    function initApp() {
+      // Load local state first fallback
+      loadLocalBackup();
+      renderVoterSelect();
+      renderBallotSlots();
+      updateUI();
+
+      // Initialize Firebase if present
+      if (typeof __firebase_config !== 'undefined') {
+        try {
+          const config = JSON.parse(__firebase_config);
+          import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js').then(({ initializeApp }) => {
+            const app = initializeApp(config);
+            Promise.all([
+              import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js'),
+              import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js')
+            ]).then(([{ getAuth, signInAnonymously, signInWithCustomToken }, { getFirestore, doc, onSnapshot, setDoc }]) => {
+              auth = getAuth(app);
+              db = getFirestore(app);
+
+              const authPromise = (typeof __initial_auth_token !== 'undefined' && __initial_auth_token)
+                ? signInWithCustomToken(auth, __initial_auth_token)
+                : signInAnonymously(auth);
+
+              authPromise.then(() => {
+                // Sync main public doc
+                const stateDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'gala_state', 'main');
+                syncUnsubscribe = onSnapshot(stateDocRef, (snap) => {
+                  if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.professors) g_professors = data.professors;
+                    if (data.voters) g_voters = data.voters;
+                    if (data.ballots) g_ballots = data.ballots;
+                    if (typeof data.galaUnlocked === 'boolean') g_galaUnlocked = data.galaUnlocked;
+                    saveLocalBackup();
+                    updateUI();
+                  } else {
+                    // Seed initial data to cloud
+                    saveCloudState();
+                  }
+                }, (err) => console.warn("Firestore sync error:", err));
+              }).catch(e => console.error("Auth error:", e));
+            });
+          });
+        } catch(e) {
+          console.warn("Firestore initialization skipped", e);
+        }
+      }
+    }
+
+    function saveCloudState() {
+      if (!db || !auth || !auth.currentUser) return;
+      import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js').then(({ doc, setDoc }) => {
+        const stateDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'gala_state', 'main');
+        setDoc(stateDocRef, {
+          professors: g_professors,
+          voters: g_voters,
+          ballots: g_ballots,
+          galaUnlocked: g_galaUnlocked,
+          updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(err => console.error("Save cloud error:", err));
+      });
+    }
+
+    function saveLocalBackup() {
+      try {
+        localStorage.setItem('pallone_gold_profs', JSON.stringify(g_professors));
+        localStorage.setItem('pallone_gold_voters', JSON.stringify(g_voters));
+        localStorage.setItem('pallone_gold_ballots', JSON.stringify(g_ballots));
+        localStorage.setItem('pallone_gold_unlocked', JSON.stringify(g_galaUnlocked));
+      } catch(e){}
+    }
+
+    function loadLocalBackup() {
+      try {
+        const p = localStorage.getItem('pallone_gold_profs');
+        const v = localStorage.getItem('pallone_gold_voters');
+        const b = localStorage.getItem('pallone_gold_ballots');
+        const u = localStorage.getItem('pallone_gold_unlocked');
+        if (p) g_professors = JSON.parse(p);
+        if (v) g_voters = JSON.parse(v);
+        if (b) g_ballots = JSON.parse(b);
+        if (u !== null) g_galaUnlocked = JSON.parse(u);
+      } catch(e){}
+    }
+
+    // --- TAB SWITCHING ---
+    function switchTab(tab) {
+      const voteTab = document.getElementById('tabVote');
+      const galaTab = document.getElementById('tabGala');
+      const navVoteBtn = document.getElementById('navVoteBtn');
+      const navGalaBtn = document.getElementById('navGalaBtn');
+
+      if (tab === 'vote') {
+        voteTab.classList.remove('hidden');
+        galaTab.classList.add('hidden');
+        navVoteBtn.className = "px-5 py-2 rounded-full text-sm font-semibold transition-all border border-yellow-500/40 bg-yellow-500/20 text-yellow-300 shadow-lg shadow-yellow-500/10";
+        navGalaBtn.className = "px-5 py-2 rounded-full text-sm font-semibold transition-all border border-yellow-500/20 bg-black/40 text-gray-300 hover:text-yellow-300";
+      } else {
+        voteTab.classList.add('hidden');
+        galaTab.classList.remove('hidden');
+        navGalaBtn.className = "px-5 py-2 rounded-full text-sm font-semibold transition-all border border-yellow-500/40 bg-yellow-500/20 text-yellow-300 shadow-lg shadow-yellow-500/10";
+        navVoteBtn.className = "px-5 py-2 rounded-full text-sm font-semibold transition-all border border-yellow-500/20 bg-black/40 text-gray-300 hover:text-yellow-300";
+      }
+    }
+
+    // --- UI UPDATER & CALCULATIONS ---
+    function updateUI() {
+      const votedCount = Object.keys(g_ballots).length;
+      document.getElementById('lockedVoteCounter').innerText = `${votedCount}/17`;
+
+      const galaLockedView = document.getElementById('galaLockedView');
+      const galaUnlockedView = document.getElementById('galaUnlockedView');
+
+      if (!g_galaUnlocked) {
+        galaLockedView.classList.remove('hidden');
+        galaUnlockedView.classList.add('hidden');
+      } else {
+        galaLockedView.classList.add('hidden');
+        galaUnlockedView.classList.remove('hidden');
+        renderGalaResults();
+      }
+
+      if (g_isAdminAuthed) {
+        renderAdminPanel();
+      }
+    }
+
+    // --- VOTING LOGIC ---
+    function renderVoterSelect() {
+      const select = document.getElementById('voterSelect');
+      select.innerHTML = `<option value="">-- Seleziona il tuo Nome --</option>` +
+        g_voters.map(v => {
+          const hasVoted = !!g_ballots[v.id];
+          return `<option value="${v.id}">${v.name} ${hasVoted ? '✓ (Voto già inviato)' : ''}</option>`;
+        }).join('');
+    }
+
+    function renderBallotSlots() {
+      const container = document.getElementById('ballotSlots');
+      container.innerHTML = POINTS_SCALE.map((pts, idx) => `
+        <div class="flex items-center gap-3 bg-black/40 p-3 rounded-xl border border-yellow-500/20">
+          <div class="w-12 text-center font-bold font-serif-gold text-yellow-400 text-sm">
+            ${idx + 1}° Pos<br><span class="text-[10px] text-gray-400 font-sans">${pts} pt</span>
+          </div>
+          <select id="slot_${idx}" class="ballot-select flex-1 bg-black/70 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+            <option value="">-- Seleziona Professore --</option>
+            ${g_professors.map(p => `<option value="${p.id}">${p.name} (${p.subject})</option>`).join('')}
+          </select>
+        </div>
+      `).join('');
+    }
+
+    function submitBallot() {
+      const voterId = document.getElementById('voterSelect').value;
+      const pin = document.getElementById('voterPinInput').value.trim();
+
+      if (!voterId) {
+        alert("Seleziona il tuo nome dalla lista giurati.");
+        return;
+      }
+      const voter = g_voters.find(v => v.id === voterId);
+      if (!voter || voter.pin !== pin) {
+        alert("PIN segreto errato! Inserisci il PIN associato al tuo nome.");
+        return;
+      }
+
+      // Collect choices
+      const selectedProfs = [];
+      for (let i = 0; i < 9; i++) {
+        const val = document.getElementById(`slot_${i}`).value;
+        if (!val) {
+          alert(`Assegna una preferenza alla posizione ${i + 1}°. Tutti e 9 i posti vanno compilati.`);
+          return;
+        }
+        if (selectedProfs.includes(val)) {
+          alert("Non puoi selezionare lo stesso professore più di una volta!");
+          return;
+        }
+        selectedProfs.push(val);
+      }
+
+      // Save ballot
+      g_ballots[voterId] = selectedProfs;
+      saveLocalBackup();
+      saveCloudState();
+      
+      alert("🎉 Voto registrato con successo! La tua scheda è stata depositata nell'urna segreta.");
+      document.getElementById('voterPinInput').value = '';
+      renderVoterSelect();
+      updateUI();
+    }
+
+    // --- GALA CALCULATIONS & RENDER ---
+    function calculateResults() {
+      const scores = {};
+      const firstPlaceCounts = {};
+
+      g_professors.forEach(p => {
+        scores[p.id] = 0;
+        firstPlaceCounts[p.id] = 0;
+      });
+
+      Object.values(g_ballots).forEach(ballot => {
+        if (Array.isArray(ballot)) {
+          ballot.forEach((profId, rankIndex) => {
+            if (scores[profId] !== undefined) {
+              scores[profId] += POINTS_SCALE[rankIndex] || 0;
+              if (rankIndex === 0) firstPlaceCounts[profId]++;
+            }
+          });
+        }
+      });
+
+      const sorted = [...g_professors].map(p => ({
+        ...p,
+        totalPoints: scores[p.id] || 0,
+        firstPlaces: firstPlaceCounts[p.id] || 0
+      })).sort((a, b) => {
+        if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+        return b.firstPlaces - a.firstPlaces; // Tie breaker: 1st places
+      });
+
+      return sorted;
+    }
+
+    function renderGalaResults() {
+      const leaderboard = calculateResults();
+      if (!leaderboard || leaderboard.length === 0) return;
+
+      const winner = leaderboard[0];
+
+      // Render Winner Card
+      document.getElementById('winnerName').innerText = winner.name;
+      document.getElementById('winnerSubject').innerText = winner.subject;
+      document.getElementById('winnerPoints').innerText = winner.totalPoints;
+
+      const winnerImg = document.getElementById('winnerPhoto');
+      const winnerFallback = document.getElementById('winnerPhotoFallback');
+      if (winner.photo) {
+        winnerImg.src = winner.photo;
+        winnerImg.classList.remove('hidden');
+        winnerFallback.classList.add('hidden');
+      } else {
+        winnerImg.classList.add('hidden');
+        winnerFallback.classList.remove('hidden');
+      }
+
+      // Podium top 3
+      const podiumContainer = document.getElementById('podiumCards');
+      const top3 = [leaderboard[1], leaderboard[0], leaderboard[2]]; // 2nd, 1st, 3rd layout
+      const podiumRanks = [2, 1, 3];
+      const podiumBorders = ['border-gray-400', 'border-yellow-400 scale-105', 'border-amber-700'];
+      const podiumBadges = ['2° POSTO', '1° VINCITORE', '3° POSTO'];
+
+      podiumContainer.innerHTML = top3.map((prof, i) => {
+        if (!prof) return '';
+        const rank = podiumRanks[i];
+        const isFirst = rank === 1;
+        return `
+          <div class="gold-card-bg rounded-2xl p-6 border-2 ${podiumBorders[i]} text-center relative flex flex-col items-center shadow-2xl">
+            <div class="absolute -top-3 gold-bg text-black text-[10px] font-extrabold px-3 py-0.5 rounded-full uppercase tracking-wider">
+              ${podiumBadges[i]}
+            </div>
+            <div class="w-24 h-24 rounded-full border-2 ${isFirst ? 'border-yellow-400' : 'border-gray-500'} overflow-hidden my-3 bg-black flex items-center justify-center">
+              ${prof.photo 
+                ? `<img src="${prof.photo}" class="w-full h-full object-cover">`
+                : `<i class="fa-solid fa-user-graduate text-3xl text-gray-500"></i>`
+              }
+            </div>
+            <h4 class="font-serif-gold font-bold text-lg ${isFirst ? 'gold-gradient-text text-xl' : 'text-white'}">${prof.name}</h4>
+            <p class="text-xs text-gray-400 mb-3">${prof.subject}</p>
+            <div class="mt-auto px-4 py-1.5 rounded-full bg-black/60 border border-yellow-500/30 text-yellow-300 font-bold text-sm">
+              ${prof.totalPoints} pts
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Full Leaderboard Table
+      const tbody = document.getElementById('leaderboardTbody');
+      tbody.innerHTML = leaderboard.map((prof, idx) => `
+        <tr class="hover:bg-yellow-500/5 transition">
+          <td class="py-3 px-4 font-bold font-serif-gold text-yellow-400">#${idx + 1}</td>
+          <td class="py-3 px-4 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full overflow-hidden bg-black border border-yellow-500/30 flex items-center justify-center shrink-0">
+              ${prof.photo 
+                ? `<img src="${prof.photo}" class="w-full h-full object-cover">`
+                : `<i class="fa-solid fa-user text-xs text-yellow-500/50"></i>`
+              }
+            </div>
+            <span class="font-semibold text-white">${prof.name}</span>
+          </td>
+          <td class="py-3 px-4 text-gray-400 text-xs">${prof.subject}</td>
+          <td class="py-3 px-4 text-center font-mono text-gray-300">${prof.firstPlaces}</td>
+          <td class="py-3 px-4 text-right font-bold text-yellow-300">${prof.totalPoints}</td>
+        </tr>
+      `).join('');
+
+      // Matrix Table Render
+      const mThead = document.getElementById('matrixThead');
+      const mTbody = document.getElementById('matrixTbody');
+
+      mThead.innerHTML = `
+        <tr>
+          <th class="py-3 px-3 text-left">Professore</th>
+          ${g_voters.map(v => `<th class="py-3 px-2 text-center text-[10px] uppercase">${v.name}</th>`).join('')}
+          <th class="py-3 px-3 text-right">Totale</th>
+        </tr>
+      `;
+
+      mTbody.innerHTML = leaderboard.map(prof => {
+        let profRow = `
+          <tr class="hover:bg-yellow-500/5 transition">
+            <td class="py-3 px-3 text-left font-semibold text-white flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full overflow-hidden bg-black border border-yellow-500/30 flex items-center justify-center shrink-0">
+                ${prof.photo ? `<img src="${prof.photo}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-[10px] text-yellow-500"></i>`}
+              </div>
+              <span>${prof.name}</span>
+            </td>
+        `;
+
+        g_voters.forEach(voter => {
+          const voterBallot = g_ballots[voter.id];
+          if (voterBallot && Array.isArray(voterBallot)) {
+            const rankIndex = voterBallot.indexOf(prof.id);
+            if (rankIndex !== -1) {
+              const pts = POINTS_SCALE[rankIndex];
+              const isFirst = rankIndex === 0;
+              profRow += `<td class="py-2 px-1 text-center font-mono ${isFirst ? 'text-yellow-400 font-bold bg-yellow-500/10' : 'text-gray-300'}">${pts}</td>`;
+            } else {
+              profRow += `<td class="py-2 px-1 text-center text-gray-600">-</td>`;
+            }
+          } else {
+            profRow += `<td class="py-2 px-1 text-center text-gray-600">-</td>`;
+          }
+        });
+
+        profRow += `<td class="py-3 px-3 text-right font-bold text-yellow-300">${prof.totalPoints}</td></tr>`;
+        return profRow;
+      }).join('');
+    }
+
+    // --- ADMIN PANEL FUNCTIONS ---
+    function openAdminModal() {
+      document.getElementById('adminModal').classList.remove('hidden');
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    function verifyAdminPin() {
+      const pin = document.getElementById('adminPinInput').value.trim();
+      if (pin === ADMIN_MASTER_PIN) {
+        g_isAdminAuthed = true;
+        document.getElementById('adminAuthBox').classList.add('hidden');
+        document.getElementById('adminControlsBox').classList.remove('hidden');
+        renderAdminPanel();
+      } else {
+        alert("Master PIN Organizzatore errato.");
+      }
+    }
+
+    function renderAdminPanel() {
+      // Toggle Gala Button
+      const toggleBtn = document.getElementById('toggleGalaUnlockBtn');
+      if (g_galaUnlocked) {
+        toggleBtn.className = "px-6 py-2.5 rounded-xl font-bold text-xs uppercase bg-red-600/30 border border-red-500/50 text-red-300 hover:bg-red-600/50 shadow-lg";
+        toggleBtn.innerHTML = `<i class="fa-solid fa-lock mr-1.5"></i> Blocca Risultati Galà`;
+      } else {
+        toggleBtn.className = "px-6 py-2.5 rounded-xl font-bold text-xs uppercase gold-bg text-black hover:brightness-110 shadow-lg shadow-yellow-500/20";
+        toggleBtn.innerHTML = `<i class="fa-solid fa-lock-open mr-1.5"></i> Sblocca Galà Finale`;
+      }
+
+      // Prof Photos Uploaders List
+      const profList = document.getElementById('profPhotoList');
+      profList.innerHTML = g_professors.map(p => `
+        <div class="bg-black/50 p-3 rounded-xl border border-gray-800 flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full border border-yellow-500/40 overflow-hidden bg-black flex items-center justify-center shrink-0">
+            ${p.photo 
+              ? `<img src="${p.photo}" class="w-full h-full object-cover">`
+              : `<i class="fa-solid fa-user-graduate text-yellow-500/50"></i>`
+            }
+          </div>
+          <div class="flex-1 space-y-1">
+            <div class="font-bold text-xs text-white">${p.name}</div>
+            <div class="flex gap-2">
+              <label class="px-2 py-1 rounded bg-yellow-500/20 border border-yellow-500/40 text-[10px] text-yellow-300 font-semibold cursor-pointer hover:bg-yellow-500/30">
+                <i class="fa-solid fa-upload"></i> Carica Foto
+                <input type="file" accept="image/*" onchange="handleProfPhotoUpload('${p.id}', event)" class="hidden">
+              </label>
+              ${p.photo ? `
+                <button onclick="removeProfPhoto('${p.id}')" class="px-2 py-1 rounded bg-red-500/20 border border-red-500/30 text-[10px] text-red-300 hover:bg-red-500/40">
+                  Rimuovi
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Voters Status Admin List
+      const voterList = document.getElementById('voterAdminList');
+      voterList.innerHTML = g_voters.map(v => {
+        const hasVoted = !!g_ballots[v.id];
+        return `
+          <div class="bg-black/40 p-2 rounded-lg border border-gray-800 flex items-center justify-between">
+            <span class="text-gray-300 font-medium">${v.name} <code class="text-yellow-400/80 ml-1">(${v.pin})</code></span>
+            <span class="${hasVoted ? 'text-emerald-400 font-bold' : 'text-gray-500'}">
+              ${hasVoted ? '<i class="fa-solid fa-check-circle"></i> Votato' : 'In attesa'}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleGalaUnlock() {
+      g_galaUnlocked = !g_galaUnlocked;
+      saveLocalBackup();
+      saveCloudState();
+      updateUI();
+      if (g_galaUnlocked) {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        alert("🔓 Il Galà Finale è ora SBLOCCATO! Tutti i partecipanti possono vedere la classifica e il podio!");
+      } else {
+        alert("🔒 Galà Bloccato. La visione dei risultati è stata nuovamente riservata.");
+      }
+    }
+
+    function handleProfPhotoUpload(profId, event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64 = e.target.result;
+        const prof = g_professors.find(p => p.id === profId);
+        if (prof) {
+          prof.photo = base64;
+          saveLocalBackup();
+          saveCloudState();
+          updateUI();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeProfPhoto(profId) {
+      const prof = g_professors.find(p => p.id === profId);
+      if (prof) {
+        prof.photo = '';
+        saveLocalBackup();
+        saveCloudState();
+        updateUI();
+      }
+    }
+
+    function copyWhatsAppInvite() {
+      let msg = `🏆 *PALLONE D'ORO DEI PROFESSORI* 🏆\n`;
+      msg += `Ecco le credenziali per accedere alla tua Scheda Voto Ufficiale:\n\n`;
+      g_voters.forEach(v => {
+        msg += `• *${v.name}* -> PIN: \`${v.pin}\`\n`;
+      });
+      msg += `\nEntra nell'app, seleziona il tuo nome, inserisci il PIN ed esprimi la tua classifica dei 9 professori!`;
+
+      // Copy using fallback textarea
+      const el = document.createElement('textarea');
+      el.value = msg;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+
+      alert("📋 Messaggio di invito WhatsApp copiato negli appunti! Incollalo nel gruppo della classe.");
+    }
+
+    function exportDataJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+        professors: g_professors,
+        voters: g_voters,
+        ballots: g_ballots,
+        galaUnlocked: g_galaUnlocked
+      }, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `pallone_oro_backup_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importDataJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.professors) g_professors = data.professors;
+          if (data.voters) g_voters = data.voters;
+          if (data.ballots) g_ballots = data.ballots;
+          if (typeof data.galaUnlocked === 'boolean') g_galaUnlocked = data.galaUnlocked;
+          saveLocalBackup();
+          saveCloudState();
+          updateUI();
+          alert(" Backup JSON ripristinato con successo!");
+        } catch(err) {
+          alert("Errore durante la lettura del file JSON.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadWinnerCard() {
+      const container = document.getElementById('winnerCardContainer');
+      if (typeof html2canvas !== 'undefined') {
+        html2canvas(container, { backgroundColor: '#08080a' }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = `Vincitore_Pallone_d_Oro.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        });
+      }
+    }
+  </script>
+</body>
+</html>
