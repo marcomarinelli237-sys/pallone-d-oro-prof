@@ -10,6 +10,10 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
     <style>
         :root {
             --gold-primary: #D4AF37;
@@ -504,8 +508,8 @@
 
         <div class="progress-banner">
             <div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); letter-spacing: 1px;">PROGRESSO VOTAZIONI CLOUD</div>
-                <div style="font-weight: 800; font-size: 1.2rem; color: var(--gold-light);" id="progressText">Sincronizzazione in corso...</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); letter-spacing: 1px;">PROGRESSO VOTAZIONI</div>
+                <div style="font-weight: 800; font-size: 1.2rem; color: var(--gold-light);" id="progressText">0 / 17 Voti Registrati</div>
             </div>
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" id="progressBar"></div>
@@ -599,6 +603,16 @@
 
         </div>
 
+        <div style="margin-top: 50px; text-align: center; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <button onclick="exportDataJSON()" style="background: transparent; border: 1px solid rgba(212, 175, 55, 0.3); color: var(--gold-light); padding: 8px 16px; border-radius: 12px; cursor: pointer; font-size: 0.8rem; margin-right: 10px; transition: all 0.2s;">
+                <i class="fa-solid fa-download"></i> Esporta Voti (File JSON)
+            </button>
+            <button onclick="document.getElementById('importFileInput').click()" style="background: transparent; border: 1px solid rgba(212, 175, 55, 0.3); color: var(--gold-light); padding: 8px 16px; border-radius: 12px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;">
+                <i class="fa-solid fa-upload"></i> Importa Dati Voto
+            </button>
+            <input type="file" id="importFileInput" style="display: none;" accept=".json" onchange="importDataJSON(event)">
+        </div>
+
     </div>
 
     <!-- ADMIN & PIN MODAL -->
@@ -668,36 +682,66 @@
 
         let currentActiveVoter = null;
         let chartInstance = null;
-
-        // JSONBIN CLOUD SYNC CONFIG (Gratuito e automatico per sincronizzare i voti di tutti)
-        const BIN_ID = "6741a293ad19ca34f8d68962"; // Sincronizzazione cloud condivisa
-        const API_KEY = "$2a$10$7Z8K...placeholder..."; 
+        let dbRef = null;
 
         window.addEventListener('DOMContentLoaded', () => {
+            // Caricamento locale iniziale immediato per evitare schermate bianche
+            loadLocalState();
             initDefaultPins();
-            fetchCloudData();
-            // Aggiorna automaticamente ogni 5 secondi per vedere i voti in tempo reale
-            setInterval(fetchCloudData, 5000);
+            renderVoterGrid();
+            updateProgress();
+            checkGalaState();
+
+            // Configurazione sicura Firebase con fallback locale
+            try {
+                const firebaseConfig = {
+                    databaseURL: "https://console.firebase.google.com/project/palloned-oro/database/palloned-oro-default-rtdb/data/~2F"
+                };
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                dbRef = firebase.database().ref('pallone_oro_data');
+                dbRef.on('value', (snapshot) => {
+                    const serverData = snapshot.val();
+                    if (serverData) {
+                        appData = Object.assign(appData, serverData);
+                        initDefaultPins();
+                        saveLocalState();
+                    }
+                    renderVoterGrid();
+                    updateProgress();
+                    checkGalaState();
+                    if (currentActiveVoter && document.getElementById('ballotCard').style.display === 'block') {
+                        loadVoterBallot();
+                    }
+                }, (error) => {
+                    console.warn("Modalità offline attiva.");
+                });
+            } catch(e) {
+                console.warn("Firebase non disponibile, utilizzo memoria locale.");
+            }
         });
 
-        async function fetchCloudData() {
-            try {
-                // Utilizza un sistema di memorizzazione cloud leggero o localStorage sincronizzato
-                const cloudSaved = localStorage.getItem('pallone_oro_cloud_sync');
-                if (cloudSaved) {
-                    appData = Object.assign(appData, JSON.parse(cloudSaved));
-                }
-                renderVoterGrid();
-                updateProgress();
-                checkGalaState();
-            } catch(e) {
-                console.error(e);
+        function loadLocalState() {
+            const saved = localStorage.getItem('pallone_oro_robust_v4');
+            if (saved) {
+                try {
+                    appData = Object.assign(appData, JSON.parse(saved));
+                } catch(e) {}
             }
         }
 
+        function saveLocalState() {
+            localStorage.setItem('pallone_oro_robust_v4', JSON.stringify(appData));
+        }
+
         function saveState() {
-            localStorage.setItem('pallone_oro_cloud_sync', JSON.stringify(appData));
-            // Per simulare il cloud in tempo reale tra dispositivi senza configurazioni complesse, i voti vengono salvati localmente e sincronizzati
+            saveLocalState();
+            if (dbRef) {
+                try {
+                    dbRef.set(appData);
+                } catch(e) {}
+            }
             updateProgress();
             checkGalaState();
         }
@@ -708,7 +752,7 @@
                     appData.pins[voter] = String(1001 + index);
                 }
             });
-            saveState();
+            saveLocalState();
         }
 
         function renderVoterGrid() {
@@ -785,6 +829,7 @@
         }
 
         function loadVoterBallot() {
+            loadLocalState();
             const voterData = appData.ballots[currentActiveVoter];
             const isSubmitted = voterData && voterData.submitted;
 
@@ -824,7 +869,7 @@
             saveState();
             renderVoterGrid();
             loadVoterBallot();
-            alert("Scheda inviata con successo e bloccata!");
+            alert("Scheda inviata con successo!");
         }
 
         function updateProgress() {
@@ -839,6 +884,7 @@
         }
 
         function switchTab(tabId) {
+            loadLocalState();
             document.getElementById('voteTab').style.display = tabId === 'voteTab' ? 'block' : 'none';
             document.getElementById('resultsTab').style.display = tabId === 'resultsTab' ? 'block' : 'none';
 
@@ -848,6 +894,8 @@
 
             if (tabId === 'resultsTab') {
                 checkGalaState();
+            } else if (tabId === 'voteTab' && currentActiveVoter) {
+                loadVoterBallot();
             }
         }
 
@@ -994,6 +1042,7 @@
         }
 
         function openAdminModal() {
+            loadLocalState();
             document.getElementById('adminModal').style.display = 'flex';
             document.getElementById('adminAuthStep').style.display = 'block';
             document.getElementById('adminControlsStep').style.display = 'none';
@@ -1031,15 +1080,20 @@
         }
 
         function renderAdminStudentsList() {
+            loadLocalState();
             const container = document.getElementById('adminStudentsList');
             if(!container) return;
             container.innerHTML = '';
 
             VOTERS.forEach(voter => {
+                const isVoted = appData.ballots[voter] && appData.ballots[voter].submitted;
                 const row = document.createElement('div');
                 row.className = 'admin-pin-row';
                 row.innerHTML = `
-                    <span style="font-size:0.85rem; font-weight:600;">${voter}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:0.85rem; font-weight:600;">${voter}</span>
+                        <span style="font-size:0.7rem; color:${isVoted ? '#2ecc71' : '#e74c3c'};">${isVoted ? '(Ha votato)' : '(In attesa)'}</span>
+                    </div>
                     <input type="text" class="admin-pin-input" value="${appData.pins[voter]}" onchange="updateStudentPin('${voter}', this.value)">
                 `;
                 container.appendChild(row);
@@ -1081,7 +1135,36 @@
             });
             msg += "\nInserisci il tuo PIN nel sito per accedere e inviare la tua scheda!";
             navigator.clipboard.writeText(msg);
-            alert("Elenco PIN copiato negli appunti! Ora puoi incollarlo su WhatsApp.");
+            alert("Elenco PIN copiato negli appunti!");
+        }
+
+        function exportDataJSON() {
+            loadLocalState();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "pallone_oro_voti_backup.json");
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        function importDataJSON(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    appData = Object.assign(appData, imported);
+                    saveState();
+                    renderVoterGrid();
+                    updateProgress();
+                    checkGalaState();
+                    alert("Dati importati con successo!");
+                } catch(err) {
+                    alert("File non valido!");
+                }
+            };
+            fileReader.readAsText(event.target.files[0]);
         }
     </script>
 </body>
